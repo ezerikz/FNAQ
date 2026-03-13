@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Five Nights at Quintanilla's</title>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=VT323&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#ddd;font-family:monospace;}
+
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.1;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.1'/%3E%3C/svg%3E");
+  animation:grn .3s steps(2) infinite;}
+@keyframes grn{0%{transform:translate(0,0)}50%{transform:translate(-2px,2px)}100%{transform:translate(2px,-1px)}}
+
+.screen{display:none;position:fixed;inset:0;flex-direction:column;align-items:center;justify-content:center;}
+.screen.active{display:flex;}
+
+/* ── TITLE ── */
+#s-title{background:radial-gradient(ellipse at 50% 40%,#1a0000 0%,#000 70%);}
+.t-main{font-family:'Creepster',cursive;font-size:clamp(2.4rem,6vw,5rem);color:#990000;
+  letter-spacing:6px;text-align:center;line-height:1.2;text-shadow:0 0 40px rgba(255,0,0,.4);
+  animation:flkr 5s infinite;}
+@keyframes flkr{0%,90%,100%{opacity:1}92%{opacity:.4}95%{opacity:.9}98%{opacity:.2}}
+.t-sub{font-family:'VT323',monospace;font-size:1.8rem;color:#00dd33;
+  letter-spacing:5px;text-shadow:0 0 14px #00cc33;margin:.5rem 0 1.8rem;text-align:center;
+  animation:puls 2.5s infinite;}
+@keyframes puls{0%,100%{opacity:1}50%{opacity:.55}}
+.t-tip{font-size:.82rem;color:#444;max-width:420px;text-align:center;line-height:1.9;margin-bottom:1.8rem;}
+.mbtn{font-family:'VT323',monospace;font-size:1.9rem;color:#00cc33;cursor:pointer;
+  padding:6px 36px;margin:4px 0;border:none;background:none;
+  text-shadow:0 0 10px #00aa22;transition:all .15s;position:relative;}
+.mbtn::before{content:'>> ';color:#aa0000;opacity:0;transition:.15s;}
+.mbtn:hover{color:#fff;text-shadow:0 0 20px #00ff44;}.mbtn:hover::before{opacity:1;}
+
+/* ── INFO SCREENS ── */
+#s-lore,#s-how{background:#050505;padding:30px;overflow-y:auto;}
+.info-wrap{max-width:560px;width:100%;}
+.stitle{font-family:'Creepster',cursive;font-size:2rem;color:#880000;letter-spacing:3px;
+  margin-bottom:20px;text-shadow:0 0 16px rgba(200,0,0,.3);}
+.itext{font-family:'VT323',monospace;font-size:1.1rem;color:#888;line-height:2.1;max-width:540px;}
+.itext .r{color:#cc2200;}.itext .g{color:#00cc33;}.itext .o{color:#ff8800;}
+
+/* ── NIGHT SELECT ── */
+#s-nights{background:radial-gradient(ellipse at center,#0e0000 0%,#020202 70%);}
+.ngrid{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;max-width:560px;}
+.nbtn{font-family:'Creepster',cursive;font-size:1.35rem;color:#bbb;background:#0d0d0d;
+  border:2px solid #222;padding:18px 22px;cursor:pointer;transition:all .22s;
+  min-width:96px;text-align:center;user-select:none;}
+.nbtn:not(.locked):hover{background:#5a0000;border-color:#cc0000;color:#fff;transform:scale(1.07);}
+.nbtn.locked{opacity:.2;cursor:not-allowed;}
+.nicon{font-size:1.9rem;margin-bottom:4px;}
+.nthm{font-size:.62rem;color:#444;margin-top:4px;font-family:'VT323',monospace;}
+
+/* ── OFFICE: column layout, room on top, terminal on bottom ── */
+#s-office{background:#000;flex-direction:column;justify-content:flex-start;align-items:stretch;}
+
+/* Room takes top portion */
+#room-scene{position:relative;flex:0 0 48%;overflow:hidden;
+  background:linear-gradient(180deg,#160808 0%,#100404 45%,#080202 100%);}
+#room-scene::before{content:'';position:absolute;top:0;left:18%;right:18%;bottom:15%;
+  border-left:1px solid #1e0808;border-right:1px solid #1e0808;
+  background:linear-gradient(180deg,#1e0c0c 0%,#130505 100%);z-index:0;}
+.poster{position:absolute;top:16%;left:50%;transform:translateX(-50%);z-index:1;
+  width:60px;height:75px;background:#090303;border:1px solid #1e0808;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:'VT323',monospace;font-size:.48rem;color:#2a0c0c;text-align:center;padding:3px;}
+
+/* HUD inside room at top */
+#hud{position:absolute;top:0;left:0;right:0;padding:7px 12px;z-index:10;
+  background:rgba(0,0,0,.94);
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+#hud-time{font-family:'VT323',monospace;font-size:1.8rem;color:#00ee44;
+  text-shadow:0 0 12px #00cc33;min-width:86px;}
+#hud-night{font-family:'Creepster',cursive;font-size:1.2rem;color:#cc2200;}
+.pbar-wrap{display:flex;align-items:center;gap:5px;margin-left:auto;}
+.pbar-lbl{font-family:'VT323',monospace;font-size:.85rem;color:#aa4444;}
+.pbar{width:110px;height:9px;background:#110000;border:1px solid #3a1010;overflow:hidden;}
+.pbar-fill{height:100%;background:#00ee44;box-shadow:0 0 6px #00cc33;transition:width .7s,background .4s;}
+.pbar-fill.w{background:#ff8800;box-shadow:0 0 6px #ff6600;animation:pbp .6s infinite;}
+.pbar-fill.c{background:#ff2200;box-shadow:0 0 8px #ff0000;animation:pbp .2s infinite;}
+@keyframes pbp{0%,100%{opacity:1}50%{opacity:.3}}
+.pbar-pct{font-family:'VT323',monospace;font-size:.85rem;color:#aa5555;min-width:36px;}
+#score-wrap{font-family:'VT323',monospace;font-size:.85rem;color:#446644;}
+#score-wrap span{color:#00cc33;}
+#cam-btn-wrap button{font-family:'VT323',monospace;font-size:.8rem;color:#555;background:#070707;
+  border:1px solid #1e1e1e;padding:3px 9px;cursor:pointer;}
+#cam-btn-wrap button:hover{color:#00cc33;}
+
+/* Doors */
+.door-wrap{position:absolute;top:38px;width:68px;z-index:5;}
+.door-wrap.dl{left:2%;}
+.door-wrap.dr{right:2%;}
+.dlabel{font-family:'VT323',monospace;font-size:.68rem;text-align:center;margin-bottom:3px;color:#661111;}
+.door-frame{height:190px;background:#0d0303;border:2px solid #1e0808;
+  display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;
+  transition:background .3s,border-color .3s;}
+.door-frame.shut{background:#020000;border-color:#881010;box-shadow:inset 0 0 20px rgba(0,0,0,.9);}
+.anim-emoji{opacity:0;font-size:2rem;transition:opacity .5s,font-size .4s;}
+.anim-emoji.s1{opacity:.25;filter:brightness(.1);}
+.anim-emoji.s2{opacity:.6;filter:brightness(.2) sepia(1) hue-rotate(10deg);font-size:2.3rem;}
+.anim-emoji.s3{opacity:1;filter:brightness(.55) sepia(1) hue-rotate(290deg) saturate(5);
+  font-size:2.7rem;animation:throb .3s infinite;}
+@keyframes throb{0%,100%{filter:brightness(.45) sepia(1) hue-rotate(290deg) saturate(5)}
+  50%{filter:brightness(1) sepia(1) hue-rotate(290deg) saturate(8)}}
+.dbtn{display:block;width:100%;margin-top:4px;
+  font-family:'VT323',monospace;font-size:.85rem;color:#cc6666;background:#110303;
+  border:1px solid #3a1010;padding:5px 0;cursor:pointer;transition:all .2s;text-align:center;}
+.dbtn:hover,.dbtn.on{color:#ffaa00;border-color:#ff8800;background:#180e00;text-shadow:0 0 8px #ffaa00;}
+
+/* ══════════ TERMINAL — bottom portion, always visible ══════════ */
+#terminal{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  background:#080303;
+  border-top:3px solid #880000;
+  padding:12px 16px 10px;
+  gap:9px;
+  min-height:0;
+  position:relative;
+}
+#term-hdr{
+  font-family:'VT323',monospace;
+  font-size:.9rem;
+  color:#cc3300;
+  letter-spacing:3px;
+  text-align:center;
+  border-bottom:1px solid #2a0808;
+  padding-bottom:6px;
+  flex-shrink:0;
+}
+#timer-track{width:100%;height:6px;background:#180000;border:1px solid #3a0808;overflow:hidden;flex-shrink:0;}
+#timer-fill{height:100%;background:#00ee44;box-shadow:0 0 7px #00cc33;transition:width .1s linear;}
+#timer-fill.urg{background:#ff2200;box-shadow:0 0 7px #ff0000;animation:urgp .15s infinite;}
+@keyframes urgp{0%,100%{opacity:1}50%{opacity:.1}}
+#question{
+  font-family:'VT323',monospace;
+  font-size:clamp(1.5rem,3.5vw,2.1rem);
+  color:#00ff44;
+  text-align:center;
+  text-shadow:0 0 18px #00ff44,0 0 35px rgba(0,255,68,.25);
+  background:#050101;
+  border:2px solid #2a1010;
+  padding:9px 14px;
+  flex-shrink:0;
+  min-height:50px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+#answer-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  flex:1;
+  min-height:80px;
+}
+.ans{
+  font-family:'VT323',monospace;
+  font-size:1.2rem;
+  color:#cccccc;
+  background:#110606;
+  border:2px solid #331010;
+  padding:8px;
+  cursor:pointer;
+  text-align:center;
+  transition:all .12s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.ans:hover{background:#1e0000;color:#00ff44;border-color:#bb0000;text-shadow:0 0 8px #00ee33;}
+.ans.ok{background:#002800;color:#00ff44;border-color:#00ee44;text-shadow:0 0 10px #00ff44;animation:aok .5s;}
+.ans.no{background:#1e0000;color:#ff3333;border-color:#ff2200;text-shadow:0 0 8px #ff0000;animation:ano .5s;}
+@keyframes aok{0%,100%{box-shadow:none}50%{box-shadow:0 0 22px #00ff44}}
+@keyframes ano{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+#feedback{position:absolute;top:10px;right:12px;
+  font-family:'Creepster',cursive;font-size:1.6rem;pointer-events:none;
+  opacity:0;transition:opacity .2s;}
+#feedback.show{opacity:1;}
+#feedback.ok{color:#00ff44;text-shadow:0 0 16px #00ff44;}
+#feedback.no{color:#ff2200;text-shadow:0 0 16px #ff0000;}
+
+/* ── CAMERAS ── */
+#s-cam{background:#000;gap:12px;padding:20px;}
+.cam-ttl{font-family:'Creepster',cursive;font-size:1.4rem;color:#880000;letter-spacing:3px;}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:580px;}
+.cfeed{background:#040404;border:2px solid #111;position:relative;overflow:hidden;
+  aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;}
+.cfeed::before{content:attr(data-l);position:absolute;top:5px;left:7px;
+  font-family:'VT323',monospace;font-size:.7rem;color:#00cc33;text-shadow:0 0 6px #00aa22;}
+.cfeed::after{content:'REC';position:absolute;top:5px;right:7px;
+  font-family:'VT323',monospace;font-size:.6rem;color:#cc0000;animation:blink2 .8s infinite;}
+@keyframes blink2{0%,100%{opacity:1}50%{opacity:0}}
+.cscene{font-size:2.4rem;filter:brightness(.1) sepia(1) hue-rotate(80deg) saturate(2);}
+.cscene.occ{filter:brightness(.25) sepia(1) hue-rotate(0deg) saturate(5);}
+
+/* ── GAME OVER / VICTORY ── */
+#s-gameover{background:#000;}
+.go-ttl{font-family:'Creepster',cursive;font-size:clamp(3rem,9vw,6rem);color:#cc0000;
+  text-shadow:0 0 40px #ff0000;margin-bottom:12px;animation:gof .35s infinite;}
+@keyframes gof{0%,85%,100%{opacity:1}88%{opacity:.3}93%{opacity:.8}97%{opacity:.1}}
+#s-victory{background:radial-gradient(ellipse at center,#001800 0%,#000 70%);}
+.vic-ttl{font-family:'Creepster',cursive;font-size:clamp(2.5rem,7vw,5rem);color:#00ee44;
+  text-shadow:0 0 28px #00cc33;margin-bottom:12px;}
+.sub-txt{font-family:'VT323',monospace;font-size:1.3rem;color:#777;margin-bottom:5px;}
+.stat-txt{font-family:'VT323',monospace;font-size:.9rem;color:#3a3a3a;}
+
+/* ── JUMPSCARE / FLASH ── */
+#js{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:99999;}
+#js.show{display:flex;}
+#js-face{font-size:clamp(9rem,22vw,18rem);animation:jsA .45s ease-out;}
+@keyframes jsA{0%{transform:scale(.05) rotate(-20deg);opacity:0}60%{transform:scale(1.5) rotate(5deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+#flash{position:fixed;inset:0;background:#ff0000;opacity:0;pointer-events:none;z-index:98000;}
+#flash.go{animation:fl .28s;}
+@keyframes fl{0%,100%{opacity:0}35%{opacity:.5}65%{opacity:.08}}
+.lo{animation:lout .5s forwards!important;}
+@keyframes lout{0%{filter:brightness(1)}40%{filter:brightness(2.5)}100%{filter:brightness(0)}}
+</style>
+</head>
+<body>
+
+<div id="flash"></div>
+<div id="js"><div id="js-face">👁️</div></div>
+
+<!-- TITLE -->
+<div class="screen active" id="s-title">
+  <div class="t-main">FIVE NIGHTS<br>AT QUINTANILLA'S</div>
+  <div class="t-sub">◈ INTEGRATION PROTOCOL ◈</div>
+  <p class="t-tip">You accepted the night shift. The animatronics are active.<br>The only thing keeping the doors closed... is calculus.</p>
+  <button class="mbtn" onclick="goTo('s-nights');buildNights()">NEW GAME</button>
+  <button class="mbtn" onclick="goTo('s-lore')">MISSION BRIEFING</button>
+  <button class="mbtn" onclick="goTo('s-how')">HOW TO SURVIVE</button>
+</div>
+
+<!-- LORE -->
+<div class="screen" id="s-lore">
+  <div class="info-wrap">
+    <div class="stitle">CLASSIFIED DOSSIER</div>
+    <div class="itext">
+      <span class="r">NIGHT GUARD LOG — EMPLOYEE #0047</span><br><br>
+      Assigned overnight security at <span class="r">Quintanilla's Education Center</span>.<br><br>
+      Previous guards disappeared. The animatronic teaching assistants —
+      <span class="r">Tony Record</span> and <span class="r">Mark Kiraly</span> — wander after midnight.<br><br>
+      Security doors run on a <span class="r">Calculus-Powered Grid</span>. It needs
+      constant recalibration via integral equations. Fail... the power fails. The doors open.<br><br>
+      <span class="r">Quintanilla himself</span> appears on Night 3. No one knows what he wants.<br><br>
+      Survive until 6:00 AM. Five nights. God help you.
+    </div>
+    <br><br>
+    <button class="mbtn" onclick="goTo('s-title')">◄ RETURN</button>
+  </div>
+</div>
+
+<!-- HOW TO -->
+<div class="screen" id="s-how">
+  <div class="info-wrap">
+    <div class="stitle">SURVIVAL PROTOCOL</div>
+    <div class="itext">
+      <span class="g">▶ Solve integrals</span> on the terminal to keep power running<br>
+      <span class="g">▶ Correct answer</span> → +8% power, animatronic pushed back<br>
+      <span class="r">▶ Wrong answer</span> → −15% power, animatronic advances<br>
+      <span class="r">▶ Timer runs out</span> = wrong answer penalty<br>
+      <span class="o">▶ CLOSE DOOR</span> buttons block animatronics but drain extra power<br>
+      <span class="g">▶ Survive</span> until 6:00 AM to complete the night<br><br>
+      <span class="r">Power drain:</span> −1%/5sec passive, −1% more per closed door<br>
+      Nights: Power Rule → Polynomials → Trig → Exponentials → Definite Integrals
+    </div>
+    <br><br>
+    <button class="mbtn" onclick="goTo('s-title')">◄ RETURN</button>
+  </div>
+</div>
+
+<!-- NIGHT SELECT -->
+<div class="screen" id="s-nights">
+  <div class="stitle">SELECT YOUR FATE</div>
+  <div class="ngrid" id="night-grid"></div>
+  <br>
+  <button class="mbtn" onclick="goTo('s-title')" style="margin-top:16px;">◄ BACK</button>
+</div>
+
+<!-- OFFICE -->
+<div class="screen" id="s-office">
+
+  <!-- Room scene (top ~48%) -->
+  <div id="room-scene">
+    <div id="hud">
+      <div id="hud-time">12:00 AM</div>
+      <div id="hud-night">NIGHT 1</div>
+      <div class="pbar-wrap">
+        <span class="pbar-lbl">PWR</span>
+        <div class="pbar"><div class="pbar-fill" id="pbar-fill" style="width:100%"></div></div>
+        <span class="pbar-pct" id="pbar-pct">100%</span>
+      </div>
+      <div id="score-wrap">SCORE <span id="score-val">0</span></div>
+      <div id="cam-btn-wrap"><button onclick="openCams()">📷 CAMS</button></div>
+    </div>
+    <div class="poster">∫f(x)dx<br>UNIT 6<br>CALCULUS</div>
+    <!-- Left door -->
+    <div class="door-wrap dl">
+      <div class="dlabel" id="dlbl-l">DOOR L</div>
+      <div class="door-frame" id="door-l">
+        <div class="anim-emoji s0" id="anim-l">🎵</div>
+      </div>
+      <button class="dbtn" id="dbtn-l" onclick="toggleDoor('l')">CLOSE</button>
+    </div>
+    <!-- Right door -->
+    <div class="door-wrap dr">
+      <div class="dlabel" id="dlbl-r">DOOR R</div>
+      <div class="door-frame" id="door-r">
+        <div class="anim-emoji s0" id="anim-r">🎭</div>
+      </div>
+      <button class="dbtn" id="dbtn-r" onclick="toggleDoor('r')">CLOSE</button>
+    </div>
+  </div>
+
+  <!-- TERMINAL (bottom ~52%) — completely separate from room, always clickable -->
+  <div id="terminal">
+    <div id="term-hdr">⚡ SECURITY TERMINAL ⚡ SOLVE TO MAINTAIN POWER</div>
+    <div id="timer-track"><div id="timer-fill" style="width:100%"></div></div>
+    <div id="question">INITIALIZING TERMINAL...</div>
+    <div id="answer-grid">
+      <!-- choices injected here -->
+    </div>
+    <div id="feedback">CORRECT!</div>
+  </div>
+
+</div>
+
+<!-- CAMERAS -->
+<div class="screen" id="s-cam">
+  <div class="cam-ttl">◈ SECURITY CAMERAS ◈</div>
+  <div class="cgrid" id="cam-grid"></div>
+  <button class="mbtn" onclick="closeCams()" style="margin-top:12px;">◄ BACK TO OFFICE</button>
+</div>
+
+<!-- GAME OVER -->
+<div class="screen" id="s-gameover">
+  <div class="go-ttl">GAME OVER</div>
+  <div class="sub-txt" id="go-sub">The facility has gone dark.</div>
+  <div class="stat-txt" id="go-stats"></div>
+  <br>
+  <button class="mbtn" onclick="retryNight()" style="margin-top:14px;">↺ TRY AGAIN</button>
+  <button class="mbtn" onclick="goTo('s-nights');buildNights()">SELECT NIGHT</button>
+  <button class="mbtn" onclick="goTo('s-title')">MAIN MENU</button>
+</div>
+
+<!-- VICTORY -->
+<div class="screen" id="s-victory">
+  <div class="vic-ttl">YOU SURVIVED</div>
+  <div class="sub-txt" id="vic-sub">Night 1 Complete</div>
+  <div class="stat-txt" id="vic-stats"></div>
+  <br>
+  <button class="mbtn" id="next-btn" onclick="nextNight()" style="margin-top:14px;">NIGHT 2 ►</button>
+  <button class="mbtn" onclick="goTo('s-title')">MAIN MENU</button>
+</div>
+
+<script>
+const BANK={
+  1:[
+    {q:"∫ 4x³ dx",  a:"x⁴ + C",     w:["4x⁴ + C","x³ + C","12x² + C"]},
+    {q:"∫ 2x dx",   a:"x² + C",      w:["2x² + C","x + C","2 + C"]},
+    {q:"∫ 6x² dx",  a:"2x³ + C",     w:["6x³ + C","3x² + C","12x + C"]},
+    {q:"∫ x⁵ dx",   a:"x⁶/6 + C",   w:["x⁵/5 + C","5x⁴ + C","6x⁵ + C"]},
+    {q:"∫ 3 dx",    a:"3x + C",      w:["3 + C","0 + C","x + C"]},
+    {q:"∫ 8x dx",   a:"4x² + C",     w:["8x² + C","8 + C","x² + C"]},
+    {q:"∫ x dx",    a:"x²/2 + C",    w:["x² + C","1 + C","2x + C"]},
+    {q:"∫ 5x⁴ dx",  a:"x⁵ + C",      w:["5x⁵ + C","x⁴ + C","20x³ + C"]},
+    {q:"∫ 9x² dx",  a:"3x³ + C",     w:["9x³ + C","3x² + C","27x + C"]},
+    {q:"∫ 7x⁶ dx",  a:"x⁷ + C",      w:["7x⁷ + C","x⁶ + C","42x⁵ + C"]},
+  ],
+  2:[
+    {q:"∫ (x²+2x+1) dx",   a:"x³/3 + x² + x + C",   w:["x³+x²+x+C","2x+2+C","x²/2+2+C"]},
+    {q:"∫ (3x²-2x) dx",    a:"x³ − x² + C",          w:["3x³−2x²+C","6x−2+C","x³+x²+C"]},
+    {q:"∫ (4x³-3x²) dx",   a:"x⁴ − x³ + C",          w:["4x⁴−3x³+C","12x²−6x+C","x⁴+x³+C"]},
+    {q:"∫ (2x+5) dx",      a:"x² + 5x + C",          w:["2x²+5x+C","x²+5+C","2+C"]},
+    {q:"∫ (x³−x) dx",      a:"x⁴/4 − x²/2 + C",     w:["x⁴−x²+C","3x²−1+C","x⁴/4+x²/2+C"]},
+    {q:"∫ (6x²+4x−1) dx",  a:"2x³ + 2x² − x + C",   w:["6x³+4x²−x+C","12x+4+C","2x³−2x²+x+C"]},
+    {q:"∫ (x²−4x+3) dx",   a:"x³/3 − 2x² + 3x + C", w:["x³−4x²+3x+C","2x−4+C","x³/3+2x²−3x+C"]},
+  ],
+  3:[
+    {q:"∫ sin(x) dx",   a:"−cos(x) + C",    w:["cos(x)+C","sin(x)+C","−sin(x)+C"]},
+    {q:"∫ cos(x) dx",   a:"sin(x) + C",     w:["−sin(x)+C","cos(x)+C","−cos(x)+C"]},
+    {q:"∫ sec²(x) dx",  a:"tan(x) + C",     w:["sec(x)+C","−tan(x)+C","2sec(x)tan(x)+C"]},
+    {q:"∫ sin(2x) dx",  a:"−cos(2x)/2 + C", w:["cos(2x)/2+C","−cos(2x)+C","cos(2x)+C"]},
+    {q:"∫ cos(3x) dx",  a:"sin(3x)/3 + C",  w:["sin(3x)+C","−sin(3x)/3+C","3sin(3x)+C"]},
+    {q:"∫ csc²(x) dx",  a:"−cot(x) + C",    w:["cot(x)+C","−csc(x)+C","tan(x)+C"]},
+    {q:"∫ 2sin(x) dx",  a:"−2cos(x) + C",   w:["2cos(x)+C","−cos(x)+C","2sin(x)+C"]},
+  ],
+  4:[
+    {q:"∫ eˣ dx",          a:"eˣ + C",          w:["xeˣ+C","eˣ⁺¹+C","eˣ/x+C"]},
+    {q:"∫ e²ˣ dx",         a:"e²ˣ/2 + C",       w:["e²ˣ+C","2e²ˣ+C","e²ˣ/x+C"]},
+    {q:"∫ 3eˣ dx",         a:"3eˣ + C",          w:["3xeˣ+C","eˣ+C","3e+C"]},
+    {q:"∫ (eˣ+x) dx",      a:"eˣ + x²/2 + C",   w:["eˣ+x²+C","xeˣ+x+C","eˣ−x²/2+C"]},
+    {q:"∫ (sin x + eˣ) dx",a:"−cos(x) + eˣ + C",w:["cos(x)+eˣ+C","−cos(x)−eˣ+C","sin(x)+eˣ+C"]},
+    {q:"∫ (2x+eˣ) dx",     a:"x² + eˣ + C",     w:["x²−eˣ+C","2+eˣ+C","2x²+eˣ+C"]},
+    {q:"∫ e³ˣ dx",         a:"e³ˣ/3 + C",        w:["3e³ˣ+C","e³ˣ+C","e³ˣ/x+C"]},
+  ],
+  5:[
+    {q:"∫₀² 2x dx",          a:"4",     w:["2","8","1"]},
+    {q:"∫₀¹ x² dx",          a:"1/3",   w:["1/2","1","2/3"]},
+    {q:"∫₀^π sin(x) dx",     a:"2",     w:["0","1","−2"]},
+    {q:"∫₁³ (2x+1) dx",      a:"12",    w:["8","6","10"]},
+    {q:"∫₀² (x²+1) dx",      a:"14/3",  w:["5","4","16/3"]},
+    {q:"∫₀¹ eˣ dx",          a:"e − 1", w:["e","1","e+1"]},
+    {q:"∫₋₁¹ x³ dx",         a:"0",     w:["1/2","−1/2","2"]},
+    {q:"∫₀^(π/2) cos(x) dx", a:"1",     w:["0","2","−1"]},
+    {q:"∫₁² 3x² dx",         a:"7",     w:["8","6","9"]},
+    {q:"∫₀³ (x+1) dx",       a:"15/2",  w:["6","9","12"]},
+  ]
+};
+
+const CAST={
+  1:{l:{n:"Tony Record",e:"🎵"},   r:{n:"Shadow",e:"👁️"}},
+  2:{l:{n:"Mark Kiraly",e:"🎭"},   r:{n:"Tony Record",e:"🎵"}},
+  3:{l:{n:"Quintanilla",e:"👤"},   r:{n:"Mark Kiraly",e:"🎭"}},
+  4:{l:{n:"Tony Record",e:"🎵"},   r:{n:"Quintanilla",e:"👤"}},
+  5:{l:{n:"All of Them",e:"💀"},   r:{n:"All of Them",e:"💀"}},
+};
+
+const THEMES=['Power Rule','Polynomials','Trig Integrals','Exponentials','Definite Integrals'];
+const ICONS=['🌑','🌒','🌓','🌔','🌕'];
+
+let G={};
+let unlocked=1;
+try{unlocked=parseInt(localStorage.getItem('fnq_ul')||'1');}catch(e){}
+
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function buildNights(){
+  const g=document.getElementById('night-grid');
+  g.innerHTML='';
+  for(let n=1;n<=5;n++){
+    const b=document.createElement('div');
+    b.className='nbtn'+(n>unlocked?' locked':'');
+    b.innerHTML=`<div class="nicon">${n>unlocked?'🔒':ICONS[n-1]}</div>NIGHT ${n}<div class="nthm">${THEMES[n-1]}</div>`;
+    if(n<=unlocked)b.onclick=()=>startNight(n);
+    g.appendChild(b);
+  }
+}
+
+function initG(n){
+  return{night:n,power:100,timeSec:0,score:0,correct:0,wrong:0,
+    anim:{l:0,r:0},doors:{l:false,r:false},
+    active:false,answering:false,gt:null,pt:null,tick:0};
+}
+
+function startNight(n){
+  G=initG(n);G.active=true;
+  document.getElementById('hud-night').textContent='NIGHT '+n;
+  document.getElementById('room-scene').classList.remove('lo');
+  const cast=CAST[n];
+  document.getElementById('anim-l').textContent=cast.l.e;
+  document.getElementById('anim-r').textContent=cast.r.e;
+  syncDoors();syncAnims();syncPwr();syncTime();
+  document.getElementById('score-val').textContent='0';
+  document.getElementById('feedback').className='';
+  goTo('s-office');
+  if(G.gt)clearInterval(G.gt);
+  G.gt=setInterval(tick,1000);
+  setTimeout(nextQ,700);
+}
+
+function retryNight(){startNight(G.night||1);}
+function nextNight(){startNight(Math.min((G.night||1)+1,5));}
+
+function tick(){
+  if(!G.active)return;
+  G.tick++;G.timeSec++;
+  if(G.timeSec>=360){winNight();return;}
+  if(G.tick%5===0){
+    let d=1;
+    if(G.doors.l)d++;
+    if(G.doors.r)d++;
+    G.power=Math.max(0,G.power-d);
+  }
+  if(G.tick%9===0){
+    const ch=0.1+G.night*.05+G.timeSec/900;
+    if(Math.random()<ch){
+      const s=Math.random()<.5?'l':'r';
+      if(!G.doors[s]&&G.anim[s]<3){
+        G.anim[s]++;syncAnims();
+        if(G.anim[s]>=3)beep(800,'sawtooth',.35,.2);
+      }
+    }
+  }
+  if(G.tick%4===0){
+    for(const s of['l','r']){
+      if(G.anim[s]>=3&&!G.doors[s]&&Math.random()<.2)trigJS(s);
+    }
+  }
+  syncTime();syncPwr();
+  if(G.power<=0)powerFail();
+}
+
+function nextQ(){
+  if(!G.active)return;
+  G.answering=false;
+  const bank=BANK[G.night];
+  const p=bank[Math.floor(Math.random()*bank.length)];
+  G.prob=p;
+  document.getElementById('question').textContent=p.q;
+  const opts=shuffle([p.a,...p.w]);
+  const grid=document.getElementById('answer-grid');
+  grid.innerHTML='';
+  opts.forEach(o=>{
+    const b=document.createElement('button');
+    b.className='ans';
+    b.textContent=o;
+    b.onclick=()=>pick(o,b);
+    grid.appendChild(b);
+  });
+  startTimer(Math.max(6,15-G.night*2));
+}
+
+function startTimer(s){
+  if(G.pt)clearInterval(G.pt);
+  const fill=document.getElementById('timer-fill');
+  fill.style.width='100%';fill.classList.remove('urg');
+  let e=0;
+  G.pt=setInterval(()=>{
+    if(!G.active){clearInterval(G.pt);return;}
+    e+=0.1;
+    const pct=Math.max(0,100-e/s*100);
+    fill.style.width=pct+'%';
+    if(pct<25)fill.classList.add('urg');
+    if(e>=s){clearInterval(G.pt);if(!G.answering)miss();}
+  },100);
+}
+
+function pick(val,btn){
+  if(G.answering)return;
+  G.answering=true;
+  if(G.pt)clearInterval(G.pt);
+  document.querySelectorAll('.ans').forEach(b=>b.style.pointerEvents='none');
+  if(val===G.prob.a){btn.classList.add('ok');hit();}
+  else{
+    btn.classList.add('no');
+    document.querySelectorAll('.ans').forEach(b=>{if(b.textContent===G.prob.a)b.classList.add('ok');});
+    miss();
+  }
+  setTimeout(()=>{if(G.active)nextQ();},1500);
+}
+
+function hit(){
+  G.correct++;G.score+=100*G.night;
+  G.power=Math.min(100,G.power+8);
+  if(Math.random()<.4){const s=Math.random()<.5?'l':'r';if(G.anim[s]>0){G.anim[s]--;syncAnims();}}
+  fb('CORRECT!','ok');
+  document.getElementById('score-val').textContent=G.score;
+  syncPwr();beep(660,'sine',.22,.15);
+}
+
+function miss(){
+  G.wrong++;G.power=Math.max(0,G.power-15);
+  const s=Math.random()<.5?'l':'r';
+  if(G.anim[s]<3){G.anim[s]++;syncAnims();}
+  if(G.anim[s]>=3)beep(800,'sawtooth',.35,.2);
+  fb('WRONG!','no');doFlash();syncPwr();
+  if(G.power<=0)powerFail();
+}
+
+function syncTime(){
+  const H=['12','1','2','3','4','5','6'];
+  const i=Math.min(Math.floor(G.timeSec/60),6);
+  const m=G.timeSec%60;
+  document.getElementById('hud-time').textContent=H[i]+':'+String(m).padStart(2,'0')+' AM';
+}
+
+function syncPwr(){
+  const p=Math.max(0,Math.round(G.power));
+  const f=document.getElementById('pbar-fill');
+  f.style.width=p+'%';
+  document.getElementById('pbar-pct').textContent=p+'%';
+  f.classList.remove('w','c');
+  if(p<20)f.classList.add('c');else if(p<40)f.classList.add('w');
+}
+
+function syncAnims(){
+  for(const s of['l','r']){
+    const el=document.getElementById('anim-'+s);
+    const st=G.anim[s];
+    el.className='anim-emoji s'+st;
+    const lbl=document.getElementById('dlbl-'+s);
+    if(st===0){lbl.style.color='#661111';lbl.textContent='DOOR '+(s==='l'?'L':'R');}
+    else if(st===1){lbl.style.color='#885500';lbl.textContent='MOVING';}
+    else if(st===2){lbl.style.color='#bb2200';lbl.textContent='⚠ NEAR';}
+    else{lbl.style.color='#ff0000';lbl.textContent='⚠ AT DOOR';}
+  }
+}
+
+function syncDoors(){
+  for(const s of['l','r']){
+    const frame=document.getElementById('door-'+s);
+    const btn=document.getElementById('dbtn-'+s);
+    if(G.doors[s]){frame.classList.add('shut');btn.classList.add('on');btn.textContent='OPEN';}
+    else{frame.classList.remove('shut');btn.classList.remove('on');btn.textContent='CLOSE';}
+  }
+}
+
+function toggleDoor(s){
+  if(!G.active)return;
+  G.doors[s]=!G.doors[s];
+  beep(G.doors[s]?180:320,'square',.14,.08);
+  syncDoors();
+}
+
+function fb(msg,cls){
+  const el=document.getElementById('feedback');
+  el.textContent=msg;el.className=cls+' show';
+  setTimeout(()=>el.classList.remove('show'),900);
+}
+
+function doFlash(){
+  const f=document.getElementById('flash');
+  f.classList.remove('go');void f.offsetWidth;f.classList.add('go');
+}
+
+function beep(freq,type,vol,dur){
+  try{
+    const c=new(window.AudioContext||window.webkitAudioContext)();
+    const o=c.createOscillator(),g=c.createGain();
+    o.connect(g);g.connect(c.destination);
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(vol,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,c.currentTime+dur);
+    o.start(c.currentTime);o.stop(c.currentTime+dur);
+  }catch(e){}
+}
+
+function powerFail(){
+  G.active=false;clearInterval(G.gt);clearInterval(G.pt);
+  document.getElementById('room-scene').classList.add('lo');
+  setTimeout(()=>trigJS('power'),1100);
+}
+
+function trigJS(src){
+  G.active=false;clearInterval(G.gt);clearInterval(G.pt);
+  const faces=['😱','👁️','💀','🎭','🎵','👤','😈'];
+  document.getElementById('js-face').textContent=faces[Math.floor(Math.random()*faces.length)];
+  const el=document.getElementById('js');el.classList.add('show');
+  beep(130,'sawtooth',1,.8);
+  setTimeout(()=>{
+    el.classList.remove('show');
+    const cast=CAST[G.night||1];
+    const nm=src==='l'?cast.l.n:src==='r'?cast.r.n:'Power Failure';
+    document.getElementById('go-sub').textContent=
+      src==='power'?'The power failed. The doors opened.':`${nm} found you.`;
+    document.getElementById('go-stats').textContent=
+      `Correct: ${G.correct}  |  Wrong: ${G.wrong}  |  Score: ${G.score}`;
+    goTo('s-gameover');
+  },2000);
+}
+
+function winNight(){
+  G.active=false;clearInterval(G.gt);clearInterval(G.pt);
+  if(G.night<5&&G.night>=unlocked){
+    unlocked=G.night+1;
+    try{localStorage.setItem('fnq_ul',unlocked);}catch(e){}
+  }
+  document.getElementById('vic-sub').textContent=`Night ${G.night} Complete — 6:00 AM`;
+  document.getElementById('vic-stats').textContent=
+    `Correct: ${G.correct} | Wrong: ${G.wrong} | Score: ${G.score} | Power: ${Math.round(G.power)}%`;
+  const nb=document.getElementById('next-btn');
+  if(G.night>=5){nb.textContent='🏆 ALL NIGHTS COMPLETE';nb.onclick=()=>goTo('s-title');}
+  else{nb.textContent=`NIGHT ${G.night+1} ►`;nb.onclick=nextNight;}
+  goTo('s-victory');
+  beep(523,'sine',.22,.22);
+  setTimeout(()=>beep(659,'sine',.22,.22),270);
+  setTimeout(()=>beep(784,'sine',.22,.35),540);
+}
+
+function openCams(){
+  if(!G.active)return;
+  const rooms=[
+    {l:'CAM 1A — MAIN HALL', s:null,e:'🏫'},
+    {l:'CAM 1B — LEFT HALL',  s:'l', e:'🚪'},
+    {l:'CAM 2A — STORAGE',    s:null,e:'📦'},
+    {l:'CAM 2B — RIGHT HALL', s:'r', e:'🚪'},
+  ];
+  const cast=CAST[G.night||1];
+  const g=document.getElementById('cam-grid');g.innerHTML='';
+  rooms.forEach(r=>{
+    const feed=document.createElement('div');
+    feed.className='cfeed';feed.setAttribute('data-l',r.l);
+    const sc=document.createElement('div');
+    sc.className='cscene';
+    if(r.s&&G.anim[r.s]>0){
+      sc.classList.add('occ');
+      sc.textContent=r.s==='l'?cast.l.e:cast.r.e;
+      sc.style.fontSize=(2.2+G.anim[r.s]*.6)+'rem';
+    }else sc.textContent=r.e;
+    feed.appendChild(sc);g.appendChild(feed);
+  });
+  goTo('s-cam');
+}
+function closeCams(){goTo('s-office');}
+
+function shuffle(a){
+  const b=[...a];
+  for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}
+  return b;
+}
+
+buildNights();
+</script>
+</body>
+</html>
